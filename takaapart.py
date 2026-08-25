@@ -46,6 +46,7 @@ def plot_four_wavelength_windows(file_path, target_frame=0, window_nm=0.45):
     image_cube, x_max, y_max = load_image_cube(file_path)
     wavelength_axis, _, wavelength_peaks = calibrate_wavelength_axis(x_max)
     wavelength_peaks = np.array([529.81891, 530.47580])
+    low_outlier_cutoff = -0.05
 
     spectrum = np.mean(image_cube, axis=(0, 1))
     x_windows = []
@@ -76,7 +77,9 @@ def plot_four_wavelength_windows(file_path, target_frame=0, window_nm=0.45):
             baseline_values.append(baseline)
             peak = float(np.max(y_window))
             scale = peak - baseline if peak > baseline else 1.0
-            normalized_windows.append((y_window - baseline) / scale)
+            normalized_window = (y_window - baseline) / scale
+            normalized_window[normalized_window < low_outlier_cutoff] = np.nan
+            normalized_windows.append(normalized_window)
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.8), sharey=True)
     axes = axes.ravel()

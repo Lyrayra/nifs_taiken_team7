@@ -57,9 +57,15 @@ def plot_overlapping_frames(file_path):
     # 5. アプローチB: 全フレーム平均の折れ線グラフ
     spectrum_data = np.mean(image_cube, axis=(0, 1))
     wavelength_axis = np.linspace(wl_start, wl_end, x_max)
+    baseline_samples = np.concatenate([spectrum_data[:5], spectrum_data[-5:]])
+    baseline = float(np.mean(baseline_samples))
+    low_outlier_cutoff = baseline - (float(np.max(spectrum_data)) - baseline) * 0.05
+    masked_spectrum_data = spectrum_data.copy()
+    masked_spectrum_data[masked_spectrum_data < low_outlier_cutoff] = np.nan
     
     plt.figure(figsize=(10, 5))
-    plt.plot(wavelength_axis, spectrum_data, color='blue')
+    plt.plot(wavelength_axis, masked_spectrum_data, color='blue')
+    plt.axhline(baseline, color='gray', linestyle=':', alpha=0.8, label='Baseline')
 
     plt.xlabel('Wavelength (nm)')
     plt.ylabel('Average Count (cnt) [Averaged over y and frames]')
