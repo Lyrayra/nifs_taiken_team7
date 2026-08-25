@@ -45,7 +45,7 @@ def calibrate_wavelength_axis(x_max):
 def plot_four_wavelength_windows(file_path, target_frame=0, window_nm=0.45):
     image_cube, x_max, y_max = load_image_cube(file_path)
     wavelength_axis, _, wavelength_peaks = calibrate_wavelength_axis(x_max)
-    wavelength_peaks = np.sort(wavelength_peaks)
+    wavelength_peaks = np.array([529.81891, 530.47580])
 
     spectrum = np.mean(image_cube, axis=(0, 1))
     x_windows = []
@@ -72,13 +72,13 @@ def plot_four_wavelength_windows(file_path, target_frame=0, window_nm=0.45):
         else:
             edge_count = max(1, min(5, x_window.size // 5))
             baseline_samples = np.concatenate([y_window[:edge_count], y_window[-edge_count:]])
-            baseline_values.append(float(np.mean(baseline_samples)))
-            baseline = baseline_values[-1]
+            baseline = float(np.mean(baseline_samples))
+            baseline_values.append(baseline)
             peak = float(np.max(y_window))
             scale = peak - baseline if peak > baseline else 1.0
             normalized_windows.append((y_window - baseline) / scale)
 
-    fig, axes = plt.subplots(1, 4, figsize=(18, 4.8), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.8), sharey=True)
     axes = axes.ravel()
 
     for idx, center_wavelength in enumerate(wavelength_peaks):
@@ -106,7 +106,7 @@ def plot_four_wavelength_windows(file_path, target_frame=0, window_nm=0.45):
         ax.set_ylabel('Normalized Count')
         ax.grid(True, linestyle='--', alpha=0.4)
 
-    fig.suptitle('Four Wavelength Windows from the Average Spectrum', y=1.02)
+    fig.suptitle('529.81891 nm and 530.47580 nm Windows from the Average Spectrum', y=1.02)
     plt.tight_layout()
     plt.show()
 
