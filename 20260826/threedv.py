@@ -1,13 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def plot_comparison():
     # --- aのデータ (今回 gyaku.py で計算して保存したもの) を読み込む ---
     a_R = []
     a_dV = []
     
-    csv_file = 'dv_r_profile.csv'
+    csv_file = os.path.join(SCRIPT_DIR, 'dv_r_profile.csv')
     try:
         with open(csv_file, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
@@ -23,18 +26,18 @@ def plot_comparison():
             
     # --- bのデータ (画像から書き起こしたもの) ---
     b_data = np.array([
-        [3.62962, 187423.15441520754],
-        [3.6939,  241480.98887838708],
-        [3.75868, 244608.14749254324],
-        [3.83491, 228816.07256185322],
-        [3.93396, 198478.26802721768],
-        [4.0342,  197981.6634977722],
-        [4.13564, 166667.63895776126],
-        [4.23832, 156868.84561887136],
-        [4.34225, 129202.4202137534],
-        [4.4357,  117716.25251674395],
-        [4.50646, 99864.58191630078],
-        [4.5778,  86217.6026472956]
+        [3.62962, 192439.9877939988],
+        [3.6939,  245616.06530712068],
+        [3.75868, 248914.7592786996],
+        [3.83491, 233249.58298758548],
+        [3.93396, 203064.91313932854],
+        [4.0342,  203676.21002683835],
+        [4.13564, 172496.9011050146],
+        [4.23832, 164262.26199249073],
+        [4.34225, 136953.750982935],
+        [4.4357,  126657.08477723994],
+        [4.50646, 108573.06372809905],
+        [4.5778,  95828.82416929209]
     ])
     b_R = b_data[:, 0]
     b_dV = b_data[:, 1]
@@ -43,7 +46,8 @@ def plot_comparison():
     c_R = []
     c_dV = []
     try:
-        with open('data_n.csv', 'r', encoding='utf-8') as f:
+        data_n_file = os.path.join(SCRIPT_DIR, 'data_n.csv')
+        with open(data_n_file, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
             next(reader) # ヘッダーをスキップ
             for row in reader:
