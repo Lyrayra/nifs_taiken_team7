@@ -151,6 +151,7 @@ def solve_inverse_problem():
     r_valid = [ch_to_r.get(ch, ch) for ch in ch_valid] # 該当するRを取得
     v0_valid = [res['v0'] / 1000.0 for res in results if not res['error']] # km/s に変換
     dv_valid = [res['dV'] / 1000.0 for res in results if not res['error']] # km/s に変換
+    A_valid  = [res['A'] for res in results if not res['error']]
     
     # Bulk Velocity (v0)
     ax_v0.plot(r_valid, v0_valid, 'o-', color='green', linewidth=2, markersize=8)
@@ -175,10 +176,10 @@ def solve_inverse_problem():
     with open(csv_filename, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         # dv を m/s で出力するようにヘッダーを変更
-        writer.writerow(['Channel', 'R (m)', 'v0 (km/s)', 'dV (m/s)'])
-        for ch, r, v0, dv in zip(ch_valid, r_valid, v0_valid, dv_valid):
+        writer.writerow(['Channel', 'R (m)', 'v0 (km/s)', 'dV (m/s)', 'A'])
+        for ch, r, v0, dv, a in zip(ch_valid, r_valid, v0_valid, dv_valid, A_valid):
             # dv_valid は km/s なので 1000 を掛けて m/s に戻す
-            writer.writerow([ch, f"{r:.4f}", f"{v0:.4f}", f"{dv * 1000.0:.4f}"])
+            writer.writerow([ch, f"{r:.4f}", f"{v0:.4f}", f"{dv * 1000.0:.4f}", f"{a:.4f}"])
     print(f"\n[INFO] プロファイルデータを '{csv_filename}' として保存しました。")
     
     # plt.show() # Commented out to prevent blocking in background
