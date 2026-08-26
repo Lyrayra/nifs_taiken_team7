@@ -41,23 +41,10 @@ def solve_inverse_problem():
     inst_peak = 529.81891   # 装置関数 I(λ) を抽出するのに使うピーク
     target_line = 529.81891 # 今回フィッティングしたい輝線の静止波長
     
-    # 1. 装置関数 I(λ) の準備
-    calib_file = 'a260825_img.txt'
-    _, i_lambda, _ = make_i_lambda(calib_file, target_center_nm=inst_peak, window_nm=0.3)
-    
-    # np.convolve の mode='same' のために、ピークを配列の中央に移動して正規化
-    peak_idx = np.argmax(i_lambda)
-    shift = len(i_lambda) // 2 - peak_idx
-    i_lambda_centered = np.roll(i_lambda, shift)
-    i_lambda_centered = i_lambda_centered / np.sum(i_lambda_centered)
-    
     # 2. 観測データ D(λ) の読み込み
     dat_file = 'lhdcxs9a_img_sig@189129_t4.44s.txt'
     dat_wl, dat_spectra = load_dat_spectrum(dat_file)
     num_channels = dat_spectra.shape[1]
-    
-    # 3. フィッティング関数の生成
-    model = make_model(i_lambda_centered, target_line, dat_wl)
     
     # フィット結果を保存するリスト
     results = []
@@ -73,9 +60,24 @@ def solve_inverse_problem():
     for ch in range(num_channels):
         y = dat_spectra[:, ch]
         
+        # チャンネルごとの波長軸
+        wl = dat_wl[:, ch]
+        
+        # チャンネル固有の装置関数 I(λ) の生成
+        _, i_lambda, _ = make_i_lambda('a260825_img.txt', target_center_nm=inst_peak, window_nm=0.3, channel=ch)
+        
+        # np.convolve の mode='same' のために、ピークを配列の中央に移動して正規化
+        peak_idx = np.argmax(i_lambda)
+        shift = len(i_lambda) // 2 - peak_idx
+        i_lambda_centered = np.roll(i_lambda, shift)
+        i_lambda_centered = i_lambda_centered / np.sum(i_lambda_centered)
+        
+        # 順問題モデル関数の作成 (このモデル関数には target_line と wl が固定で埋め込まれる)
+        model = make_model(i_lambda_centered, target_line, wl)
+        
         # 欠損値(NaN)を除去
         mask = ~np.isnan(y)
-        x_fit = dat_wl[mask]
+        x_fit = wl[mask]
         y_fit = y[mask]
         
         # 初期値 p0 = [A, v0, dV, bg] の推定

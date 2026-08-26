@@ -2,42 +2,66 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def load_average_spectrum(file_path):
+def load_spectra_and_wavelengths(file_path):
+    """
+    ファイルから画像キューブを読み込み、チャンネルごとのスペクトルと波長軸（2D）を計算して返す。
+    波長軸のキャリブレーションは、各チャンネルごとに右側の2つのピークを用いて行う。
+    """
     data_list = []
-
     with open(file_path, 'r') as f:
-        is_data_section = False
+        is_data = False
         for line in f:
             line = line.strip()
             if line == '[data]' or line == '#[data]':
-                is_data_section = True
+                is_data = True
                 continue
-
-            if is_data_section and line:
+            if is_data and line:
                 parts = line.split(',')
                 if len(parts) == 4:
                     data_list.append([float(v) for v in parts])
-
+    
     raw_data = np.array(data_list)
-    if raw_data.size == 0:
-        raise ValueError(f'No data rows were found in {file_path}. Check the [data] section marker.')
-
     frames = int(raw_data[:, 0].max()) + 1
     x_max = int(raw_data[:, 1].max()) + 1
     y_max = int(raw_data[:, 2].max()) + 1
-
+    
     image_cube = np.zeros((frames, y_max, x_max))
     for row in raw_data:
         frame_idx, x_idx, y_idx, count = int(row[0]), int(row[1]), int(row[2]), row[3]
         image_cube[frame_idx, y_idx, x_idx] = count
 
-    pixel_peaks = np.array([12, 33, 92, 111])
-    wavelength_peaks = np.array([530.47580, 529.81891, 528.03, 527.40393])
-    poly = np.poly1d(np.polyfit(pixel_peaks, wavelength_peaks, 1))
-    wavelength_axis = np.linspace(poly(0), poly(x_max - 1), x_max)
-
-    spectrum_data = np.mean(image_cube, axis=(0, 1))
-    return wavelength_axis, spectrum_data
+    # 時間平均をとって (12, 128) の2Dスペクトルにする
+    img = np.mean(image_cube, axis=0)
+    
+    # チャンネルごとの波長軸を格納する配列 (128, 12)
+    wavelength_axis = np.zeros((x_max, y_max))
+    
+    wne1 = 529.81891
+    wne2 = 530.47573
+    pixel = np.arange(x_max)
+    
+    from scipy.signal import find_peaks
+    
+    for i in range(y_max):
+        spct = img[i, :]
+        # ピークを検出
+        peaks, _ = find_peaks(spct)
+        
+        if len(peaks) < 2:
+            print(f"Warning: Not enough peaks found in channel {i}")
+            continue
+            
+        # ピークの強度順にソート
+        top_peak_order = np.argsort(spct[peaks])[::-1]
+        
+        # 上位2つのピークのインデックスを取得
+        idx1 = peaks[top_peak_order[0]]
+        idx2 = peaks[top_peak_order[1]]
+        
+        # 波長を線形補間して計算
+        wavelength_axis[:, i] = (pixel - idx1) / (idx2 - idx1) * (wne2 - wne1) + wne1
+        
+    return wavelength_axis, img.T  # img.T makes it (128, 12)
 
 
 def estimate_baseline(spectrum, edge_count=5):
@@ -46,8 +70,16 @@ def estimate_baseline(spectrum, edge_count=5):
     return float(np.mean(edge_samples))
 
 
-def make_i_lambda(file_path, edge_count=5, target_center_nm=None, window_nm=0.3):
-    wavelength_axis, spectrum = load_average_spectrum(file_path)
+
+def make_i_lambda(file_path, edge_count=5, target_center_nm=None, window_nm=0.3, channel=None):
+    wavelength_axis_2d, spectra_2d = load_spectra_and_wavelengths(file_path)
+    
+    if channel is not None:
+        wavelength_axis = wavelength_axis_2d[:, channel]
+        spectrum = spectra_2d[:, channel]
+    else:
+        wavelength_axis = wavelength_axis_2d[:, 0]
+        spectrum = spectra_2d[:, 0]
 
     # ターゲット波長が指定されていない場合は、スペクトルの最大値をピークとみなす
     if target_center_nm is None:

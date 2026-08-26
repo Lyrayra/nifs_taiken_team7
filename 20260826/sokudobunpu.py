@@ -58,12 +58,17 @@ def load_average_spectrum(file_path):
         frame_idx, x_idx, y_idx, count = int(row[0]), int(row[1]), int(row[2]), row[3]
         image_cube[frame_idx, y_idx, x_idx] = count
 
-    pixel_peaks = np.array([12, 33, 92, 111])
-    wavelength_peaks = np.array([530.47580, 529.81891, 528.03, 527.40393])
-    poly = np.poly1d(np.polyfit(pixel_peaks, wavelength_peaks, 1))
-    wavelength_axis = np.linspace(poly(0), poly(x_max - 1), x_max)
-
     spectrum_data = np.mean(image_cube, axis=(0, 1))
+    
+    # 波長への変換を右側の1つ目のピークで位置合わせし、1pxあたりの分散を固定する
+    peak1_idx = 80 + np.argmax(spectrum_data[80:105])
+    
+    # 指定された1pxあたりの波長 (値が減る方向なのでマイナス)
+    dispersion = -0.029855
+    
+    # peak1_idx の波長を 528.03 nm として波長軸を計算
+    x_indices = np.arange(x_max)
+    wavelength_axis = 528.03 + (x_indices - peak1_idx) * dispersion
     baseline_samples = np.concatenate([spectrum_data[:5], spectrum_data[-5:]])
     baseline = float(np.mean(baseline_samples))
     low_outlier_cutoff = baseline - (float(np.max(spectrum_data)) - baseline) * 0.05

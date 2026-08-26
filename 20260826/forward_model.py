@@ -72,11 +72,12 @@ def load_dat_spectrum(file_path):
     spectra_data = raw_data[:, 1:] # Return all 12 stripes without averaging
     
     # Wavelength axis
-    x_max = len(spectra_data)
-    pixel_peaks = np.array([12, 33, 92, 111])
-    wavelength_peaks = np.array([530.47580, 529.81891, 528.03, 527.40393])
-    poly = np.poly1d(np.polyfit(pixel_peaks, wavelength_peaks, 1))
-    wavelength_axis = np.linspace(poly(0), poly(x_max - 1), x_max)
+    # プラズマのデータにはネオンの輝線がないため、キャリブレーションランプ(a260825_img.txt)
+    # から得られた正確な波長軸をインポートして適用する
+    from ilambda_builder import load_spectra_and_wavelengths
+    import os
+    calib_file = os.path.join(os.path.dirname(__file__), 'a260825_img.txt')
+    wavelength_axis, _ = load_spectra_and_wavelengths(calib_file)
     
     return wavelength_axis, spectra_data
 
