@@ -71,7 +71,7 @@ def estimate_baseline(spectrum, edge_count=5):
 
 
 
-def make_i_lambda(file_path, edge_count=5, target_center_nm=None, window_nm=0.3, channel=None):
+def make_i_lambda(file_path, edge_count=5, target_center_nm=None, window_nm=0.35, channel=None):
     wavelength_axis_2d, spectra_2d = load_spectra_and_wavelengths(file_path)
     
     if channel is not None:

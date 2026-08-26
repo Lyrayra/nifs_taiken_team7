@@ -64,7 +64,7 @@ def solve_inverse_problem():
         wl = dat_wl[:, ch]
         
         # チャンネル固有の装置関数 I(λ) の生成
-        _, i_lambda, _ = make_i_lambda('a260825_img.txt', target_center_nm=inst_peak, window_nm=0.3, channel=ch)
+        _, i_lambda, _ = make_i_lambda('a260825_img.txt', target_center_nm=inst_peak, window_nm=0.35, channel=ch)
         
         # np.convolve の mode='same' のために、ピークを配列の中央に移動して正規化
         peak_idx = np.argmax(i_lambda)
