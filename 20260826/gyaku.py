@@ -181,7 +181,7 @@ def solve_inverse_problem():
             writer.writerow([ch, f"{r:.4f}", f"{v0:.4f}", f"{dv * 1000.0:.4f}"])
     print(f"\n[INFO] プロファイルデータを '{csv_filename}' として保存しました。")
     
-    plt.show()
+    # plt.show() # Commented out to prevent blocking in background
 
 if __name__ == '__main__':
     solve_inverse_problem()

@@ -2,10 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def parabolic_subpixel_peak(y):
+    # ピークのインデックスをパラボラ補間でサブピクセル精度で求める
+    idx = np.argmax(y)
+    if idx == 0 or idx == len(y) - 1:
+        return float(idx)
+    alpha = y[idx - 1]
+    beta = y[idx]
+    gamma = y[idx + 1]
+    # サブピクセルオフセット
+    offset = 0.5 * (alpha - gamma) / (alpha - 2 * beta + gamma)
+    return idx + offset
+
 def load_spectra_and_wavelengths(file_path):
     """
     ファイルから画像キューブを読み込み、チャンネルごとのスペクトルと波長軸（2D）を計算して返す。
-    波長軸のキャリブレーションは、各チャンネルごとに右側の2つのピークを用いて行う。
+    サブピクセル精度のピーク位置検出を行い、滑らかな分散の変化を捉える。
     """
     data_list = []
     with open(file_path, 'r') as f:
@@ -40,26 +52,17 @@ def load_spectra_and_wavelengths(file_path):
     wne2 = 530.47573
     pixel = np.arange(x_max)
     
-    from scipy.signal import find_peaks
-    
     for i in range(y_max):
         spct = img[i, :]
-        # ピークを検出
-        peaks, _ = find_peaks(spct)
-        
-        if len(peaks) < 2:
-            print(f"Warning: Not enough peaks found in channel {i}")
-            continue
-            
-        # ピークの強度順にソート
-        top_peak_order = np.argsort(spct[peaks])[::-1]
-        
-        # 上位2つのピークのインデックスを取得
-        idx1 = peaks[top_peak_order[0]]
-        idx2 = peaks[top_peak_order[1]]
+        # サブピクセル精度でピークを検出 (およそピクセル34と12付近)
+        # 強度の高い左側の2つのピークの範囲を直接指定する
+        # Peak 1 (529.81891 nm): ピクセル30〜40の範囲
+        sub_idx1 = 30 + parabolic_subpixel_peak(spct[30:40])
+        # Peak 2 (530.47573 nm): ピクセル8〜18の範囲
+        sub_idx2 = 8 + parabolic_subpixel_peak(spct[8:18])
         
         # 波長を線形補間して計算
-        wavelength_axis[:, i] = (pixel - idx1) / (idx2 - idx1) * (wne2 - wne1) + wne1
+        wavelength_axis[:, i] = (pixel - sub_idx1) / (sub_idx2 - sub_idx1) * (wne2 - wne1) + wne1
         
     return wavelength_axis, img.T  # img.T makes it (128, 12)
 
