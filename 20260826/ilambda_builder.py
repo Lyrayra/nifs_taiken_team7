@@ -14,7 +14,7 @@ def parabolic_subpixel_peak(y):
     offset = 0.5 * (alpha - gamma) / (alpha - 2 * beta + gamma)
     return idx + offset
 
-def load_spectra_and_wavelengths(file_path):
+def load_spectra_and_wavelengths(file_path):        
     """
     ファイルから画像キューブを読み込み、チャンネルごとのスペクトルと波長軸（2D）を計算して返す。
     サブピクセル精度のピーク位置検出を行い、滑らかな分散の変化を捉える。
@@ -67,10 +67,10 @@ def load_spectra_and_wavelengths(file_path):
     return wavelength_axis, img.T  # img.T makes it (128, 12)
 
 
-def estimate_baseline(spectrum, edge_count=5):
-    edge_count = min(edge_count, spectrum.size // 2)
-    edge_samples = np.concatenate([spectrum[:edge_count], spectrum[-edge_count:]])
-    return float(np.mean(edge_samples))
+#def estimate_baseline(spectrum, edge_count=5):
+#    edge_count = min(edge_count, spectrum.size // 2)
+#    edge_samples = np.concatenate([spectrum[:edge_count], spectrum[-edge_count:]])
+#    return float(np.mean(edge_samples))
 
 
 
@@ -98,7 +98,8 @@ def make_i_lambda(file_path, edge_count=5, target_center_nm=None, window_nm=0.35
         raise ValueError(f"No data found around the target peak {target_center_nm} nm within ±{window_nm} nm.")
 
     # 1) バックグラウンド除去（切り出したウィンドウの端のデータからベースラインを推定）
-    baseline = estimate_baseline(spectrum_window, edge_count=edge_count)
+#    baseline = estimate_baseline(spectrum_window, edge_count=edge_count)
+    baseline = np.min(spectrum_window)
     spectrum_bg_subtracted = spectrum_window - baseline
     spectrum_bg_subtracted[spectrum_bg_subtracted < 0] = 0.0
 
