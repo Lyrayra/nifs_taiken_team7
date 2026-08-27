@@ -71,8 +71,7 @@ def plot_comparison():
     except FileNotFoundError:
         print(f"エラー: data_n.csv が見つかりません。")
         return
-    
-    # --- emcee のデータ (dv_r_profile_emcee.csv) ---
+    # --- MCMC のデータ a (dv_r_profile_emcee.csv) を線の追加用として読み込み ---
     emcee_R = []
     emcee_dV_16 = []
     emcee_dV_84 = []
@@ -80,7 +79,7 @@ def plot_comparison():
         emcee_file = os.path.join(SCRIPT_DIR, 'dv_r_profile_emcee.csv')
         with open(emcee_file, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
-            next(reader) # ヘッダーをスキップ
+            next(reader)
             for row in reader:
                 if not row: continue
                 emcee_R.append(float(row[1]))
@@ -91,6 +90,26 @@ def plot_comparison():
         emcee_dV_84 = np.array(emcee_dV_84)
     except FileNotFoundError:
         print(f"エラー: dv_r_profile_emcee.csv が見つかりません。")
+
+    # --- MCMC のデータ c (montecarlo_results.csv) を線の追加用として読み込み ---
+    mc_R = []
+    mc_dV_16 = []
+    mc_dV_84 = []
+    try:
+        mc_file = os.path.join(SCRIPT_DIR, 'montecarlo_results.csv')
+        with open(mc_file, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader) # ヘッダーをスキップ
+            for row in reader:
+                if not row: continue
+                mc_R.append(float(row[0]))
+                mc_dV_16.append(float(row[2])) # dv_lower
+                mc_dV_84.append(float(row[3])) # dv_upper
+        mc_R = np.array(mc_R)
+        mc_dV_16 = np.array(mc_dV_16)
+        mc_dV_84 = np.array(mc_dV_84)
+    except FileNotFoundError:
+        print(f"エラー: montecarlo_results.csv が見つかりません。")
     
     # --- プロット ---
     plt.figure(figsize=(9, 6))
@@ -113,10 +132,19 @@ def plot_comparison():
     plt.errorbar(c_R, c_dV, yerr=c_dV_err, fmt='s', color='blue', markersize=7, 
                  capsize=4, elinewidth=1.2, capthick=1.2, label='Data c (data_n.csv)', zorder=2)
     
-    # emceeの16%と84%を線でプロット
-    if len(emcee_R) > 0:
-        plt.plot(emcee_R, emcee_dV_16, '--', color='purple', linewidth=1.5, zorder=3, label='emcee 16%')
-        plt.plot(emcee_R, emcee_dV_84, '--', color='red', linewidth=1.5, zorder=3, label='emcee 84%')
+    # mcmc (aとc) の16%と84%を区別せずにつなげて1本の線でプロット
+    combined_mc_R = np.concatenate([emcee_R, mc_R]) if len(emcee_R) > 0 and len(mc_R) > 0 else (emcee_R if len(emcee_R) > 0 else mc_R)
+    combined_mc_dV_16 = np.concatenate([emcee_dV_16, mc_dV_16]) if len(emcee_dV_16) > 0 and len(mc_dV_16) > 0 else (emcee_dV_16 if len(emcee_dV_16) > 0 else mc_dV_16)
+    combined_mc_dV_84 = np.concatenate([emcee_dV_84, mc_dV_84]) if len(emcee_dV_84) > 0 and len(mc_dV_84) > 0 else (emcee_dV_84 if len(emcee_dV_84) > 0 else mc_dV_84)
+    
+    if len(combined_mc_R) > 0:
+        sort_mc_idx = np.argsort(combined_mc_R)
+        sorted_mc_R = combined_mc_R[sort_mc_idx]
+        sorted_mc_dV_16 = combined_mc_dV_16[sort_mc_idx]
+        sorted_mc_dV_84 = combined_mc_dV_84[sort_mc_idx]
+        
+        plt.plot(sorted_mc_R, sorted_mc_dV_16, '--', color='purple', linewidth=1.5, zorder=3, label='MCMC 16% (Data a & c)')
+        plt.plot(sorted_mc_R, sorted_mc_dV_84, '--', color='red', linewidth=1.5, zorder=3, label='MCMC 84% (Data a & c)')
     
     # グラフの装飾
     plt.xlabel('Major Radius R (m)', fontsize=12)
