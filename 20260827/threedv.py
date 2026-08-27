@@ -143,8 +143,10 @@ def plot_comparison():
         sorted_mc_dV_16 = combined_mc_dV_16[sort_mc_idx]
         sorted_mc_dV_84 = combined_mc_dV_84[sort_mc_idx]
         
-        plt.plot(sorted_mc_R, sorted_mc_dV_16, '--', color='purple', linewidth=1.5, zorder=3, label='MCMC 16% (Data a & c)')
-        plt.plot(sorted_mc_R, sorted_mc_dV_84, '--', color='red', linewidth=1.5, zorder=3, label='MCMC 84% (Data a & c)')
+
+        
+        # 16%と84%の間を薄い色で塗りつぶす
+        plt.fill_between(sorted_mc_R, sorted_mc_dV_16, sorted_mc_dV_84, color='purple', alpha=0.15, zorder=2, label='MCMC 16%-84% Range')
     
     # グラフの装飾
     plt.xlabel('Major Radius R (m)', fontsize=12)
