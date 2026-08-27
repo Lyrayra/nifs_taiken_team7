@@ -35,6 +35,9 @@ LHD 荷電交換分光 (CXS) データの逆問題解析パイプライン。
 | `gosa.py` | `gyaku.py` に誤差評価を追加。共分散行列 pcov の (2,2) 成分から dV の標準誤差 (1σ) を算出 |
 | `reff.py` | tsmesh データから実効マイナー半径 reff を計算。prep ファイルからチャンネル-主半径 R の対応を取得 |
 | `plot_fv.py` | R-dV プロファイルをエラーバー付きで描画 |
+| `threedv.py` | 複数データセット (a: gosa.py, b: 提示値, c: data_n.csv) の R-dV プロファイルをエラーバー付きで比較プロット |
+| `gyaku_emcee.py` | curve_fitの代わりに emcee MCMC でパラメータ事後分布をサンプリングする逆問題ソルバー |
+| `plot_emcee_prob.py` | MCMCの事後分布を確率分布（濃淡）として、既存のエラーバー付きプロットに重ねて描画 |
 
 ## データファイル
 
@@ -45,6 +48,9 @@ LHD 荷電交換分光 (CXS) データの逆問題解析パイプライン。
 | `lhdcxs9a_prep@189129.dat` | prep ファイル（チャンネルと観測位置 R の対応表） |
 | `tsmesh@189129_t4.44s_phi18deg.dat` | トムソン散乱メッシュデータ（reff 計算用） |
 | `dv_r_profile.csv` | フィッティング結果の出力 CSV（R, v₀, dV, dV_err, A） |
+| `data_n.csv` | 比較用データ c（R, dV, dV_err） |
+| `dv_r_profile_emcee.csv` | emceeによるフィッティング結果の出力 CSV（R, dVのmedian, 16%, 84%など） |
+| `emcee_samples.npz` | emceeのフルサンプルデータ（各チャンネルの事後分布プロット用） |
 
 ## 実行方法
 
@@ -57,6 +63,15 @@ python gosa.py
 
 # 3. R-dV プロファイルの描画
 python plot_fv.py
+
+# 4. 複数データセットの比較 (curve_fitベース)
+python threedv.py
+
+# 5. emcee MCMCによるフィッティング（事後分布サンプリング）
+python gyaku_emcee.py
+
+# 6. emcee の確率分布をエラーバーに重ねて描画
+python plot_emcee_prob.py
 ```
 
 ## 依存ライブラリ
