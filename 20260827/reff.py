@@ -104,8 +104,31 @@ def plot_reff():
     for ch, r, reff in zip(ch_arr, r_obs_arr, reff_obs_arr):
         print(f"   {ch:2d}   | {r:.3f} | {reff:.4f}")
         
+    # --- データ b, c の読み込み (threedv_T.py と同じ) ---
+    b_data = np.array([
+        [0, 3.62962], [1, 3.6939], [2, 3.75868], [3, 3.83491], [4, 3.93396], 
+        [5, 4.0342], [6, 4.13564], [7, 4.23832], [8, 4.34225], [9, 4.4357], 
+        [10, 4.50646], [11, 4.5778]
+    ])
+    b_R = b_data[:, 1]
+    b_Z = np.zeros_like(b_R)
+    
+    c_R = []
+    try:
+        import csv
+        with open('data_n.csv', 'r') as f:
+            reader = csv.reader(f)
+            next(reader)
+            for row in reader:
+                if row: c_R.append(float(row[0]))
+    except:
+        pass
+    c_R = np.array(c_R)
+    c_Z = np.zeros_like(c_R)
+    
     # 4. 図示
-    fig, ax3 = plt.subplots(figsize=(8, 7))
+    # 横長にする
+    fig, ax3 = plt.subplots(figsize=(12, 6))
     
     # プラズマ断面のヒートマップ（Z-R平面）と観測点
     # ダミー値を除外してプラズマ部分だけを抽出
@@ -125,17 +148,21 @@ def plot_reff():
     # プラズマ範囲の目安として |reff| = 0.6 の境界線を引く
     ax3.contour(R_mesh, Z_mesh, abs_reff_plot, levels=[0.6], colors='white', linewidths=2, linestyles='dashed')
     
-    # 観測点のプロット
-    ax3.scatter(r_obs_arr, z_obs_arr, color='cyan', edgecolors='black', s=40, label='Observation Points', zorder=5)
+    # 観測点のプロット (Data a, b, c)
+    ax3.scatter(r_obs_arr, z_obs_arr, color='orange', marker='o', edgecolors='black', s=50, label='Data a (prep)', zorder=5)
+    ax3.scatter(b_R, b_Z, color='green', marker='^', edgecolors='black', s=50, label='Data b (Provided)', zorder=5)
+    if len(c_R) > 0:
+        ax3.scatter(c_R, c_Z, color='blue', marker='s', edgecolors='black', s=50, label='Data c (data_n.csv)', zorder=5)
+    
+    # Data a の横にチャンネル番号を付記
     for ch, r, z_obs in zip(ch_arr, r_obs_arr, z_obs_arr):
-        # 点の横にチャンネル番号を付記
-        ax3.text(r + 0.02, z_obs + 0.02, str(ch), color='white', fontsize=8, zorder=6,
+        ax3.text(r + 0.015, z_obs + 0.015, str(ch), color='white', fontsize=8, zorder=6,
                  path_effects=[patheffects.withStroke(linewidth=2, foreground='black')])
                  
-    ax3.set_xlabel('Major Radius R (m)')
-    ax3.set_ylabel('Vertical Position Z (m)')
-    ax3.set_title('CXRS Channel Mapping & Plasma Cross Section')
-    ax3.legend(loc='upper right')
+    ax3.set_xlabel('Major Radius R (m)', fontsize=12)
+    ax3.set_ylabel('Vertical Position Z (m)', fontsize=12)
+    ax3.set_title('CXRS Channel Mapping & Plasma Cross Section (a, b, c)', fontsize=14)
+    ax3.legend(loc='upper right', fontsize=11)
     ax3.grid(True, linestyle=':', alpha=0.6)
     
     # R軸・Z軸のアスペクト比を揃える（物理的な形状を正しく表示するため）

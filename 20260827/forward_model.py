@@ -106,17 +106,6 @@ def plot_forward_model():
         background=bg
     )
     
-    import os
-    # 2つ目のデータ (.txt) を読み込む
-    dat_file_path = os.path.join(os.path.dirname(__file__), 'lhdcxs9a_img_sig@189129_t4.44s.txt')
-    dat_wl, dat_spectra = load_dat_spectrum(dat_file_path)
-
-    # 新しいデータ (.txt) のスケールを畳み込みの山の頂点に合わせる
-    # チャンネル間の相対的な強さを保つため、全チャンネルの最大・最小値を使って一括でスケーリングします
-    d_max = np.nanmax(d_spec)
-    global_dat_max = np.nanmax(dat_spectra)
-    global_dat_min = np.nanmin(dat_spectra)
-    
     # プロット
     fig, ax1 = plt.subplots(figsize=(10, 5))
     
@@ -124,30 +113,16 @@ def plot_forward_model():
     ax1.plot(wl, e_spec, label=r'Theory $E(\lambda)$ (No Inst. Broadening)', color='green', linestyle='--')
     ax1.plot(wl, d_spec, label=r'Forward Model $D(\lambda) = E*I + bg$', color='red', linewidth=2)
     
-    # 12個のチャンネルをそれぞれ描画
-    num_channels = dat_spectra.shape[1]
-    import matplotlib.cm as cm
-    colors = cm.turbo(np.linspace(0, 1, num_channels)) # チャンネルごとに色を分ける
-    
-    for ch in range(num_channels):
-        dat_spec = dat_spectra[:, ch]
-        if global_dat_max > global_dat_min:
-            dat_spec_scaled = (dat_spec - global_dat_min) / (global_dat_max - global_dat_min) * (d_max - bg) + bg
-        else:
-            dat_spec_scaled = dat_spec + bg
-            
-        ax1.plot(dat_wl, dat_spec_scaled, color=colors[ch], linewidth=1.2, alpha=0.8, label=f'Ch {ch+1}')
-    
-    # 解析対象のピークだけでなく、新しいデータの山も見えるように全範囲を表示
+    # 拡大表示
     # ax1.set_xlim(target_line - 0.5, target_line + 0.5)
     # ax1.set_ylim(bg - 50, np.nanmax(m_spec) * 1.1)
 
-    ax1.set_xlabel('Wavelength (nm)')
-    ax1.set_ylabel('Count / Scaled Signal')
-    plt.title('Forward Problem: Model vs Measurement')
+    ax1.set_xlabel('Wavelength (nm)', fontsize=12)
+    ax1.set_ylabel('Count', fontsize=12)
+    plt.title('Forward Problem: Model vs Measurement', fontsize=14)
     
-    # 凡例を外側に配置して見やすくする
-    ax1.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize='small', borderaxespad=0.)
+    # 凡例を大きくする
+    ax1.legend(loc='best', fontsize=12)
     ax1.grid(True, linestyle=':')
     plt.tight_layout()
     plt.show()

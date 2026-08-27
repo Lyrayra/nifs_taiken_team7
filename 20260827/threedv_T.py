@@ -113,43 +113,68 @@ def plot_comparison():
         mc_dV_84 = np.array(mc_dV_84)
     except FileNotFoundError:
         print(f"エラー: montecarlo_results.csv が見つかりません。")
-    
-    # ========================================================
-    # 単位変換: dV (m/s) -> E = 1/2 k_B T (J)
-    # dV = sqrt(2 k_B T / m) より k_B T = 1/2 m dV^2
-    # したがって E = 1/2 k_B T = 1/4 m dV^2
-    # 誤差伝播: dE = 1/2 m dV * dV_err
-    # ========================================================
-    AMU = 1.66053906660e-27  # kg
-    M_C = 12.0 * AMU         # 炭素原子の質量 (kg)
-    
-    def dV_to_E(dv):
-        return 0.25 * M_C * (dv ** 2)
         
-    def dV_err_to_E_err(dv, dv_err):
-        return 0.5 * M_C * dv * dv_err
+    # --- 未補正データ (uncorrected_dv.csv) ---
+    uncorr_R = []
+    uncorr_dV = []
+    uncorr_dV_err = []
+    try:
+        uncorr_file = os.path.join(SCRIPT_DIR, 'uncorrected_dv.csv')
+        with open(uncorr_file, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader)
+            for row in reader:
+                if not row: continue
+                uncorr_R.append(float(row[1]))
+                uncorr_dV.append(float(row[2]))
+                uncorr_dV_err.append(float(row[3]))
+        uncorr_R = np.array(uncorr_R)
+        uncorr_dV = np.array(uncorr_dV)
+        uncorr_dV_err = np.array(uncorr_dV_err)
+    except FileNotFoundError:
+        print(f"エラー: uncorrected_dv.csv が見つかりません。")
+    
+    # ========================================================
+    # 単位変換: dV (m/s) -> T (K)
+    # T = m * dV^2 / k_B
+    # 誤差伝播: dT = 2 * m * dV * dV_err / k_B
+    # ========================================================
+    AMU = 1.660539e-27  # kg
+    M_C = 12.0 * AMU    # 炭素原子の質量 (kg)
+    K_B = 1.380649e-23  # ボルツマン定数 (J/K)
+    
+    def dV_to_T(dv):
+        return 0.5 * M_C * (dv ** 2) / K_B
+        
+    def dV_err_to_T_err(dv, dv_err):
+        return M_C * dv * dv_err / K_B
 
     # データa
-    a_dV_err = dV_err_to_E_err(np.array(a_dV), np.array(a_dV_err))
-    a_dV = dV_to_E(np.array(a_dV))
+    a_dV_err = dV_err_to_T_err(np.array(a_dV), np.array(a_dV_err))
+    a_dV = dV_to_T(np.array(a_dV))
     
     # データb
-    b_dV_err = dV_err_to_E_err(np.array(b_dV), np.array(b_dV_err))
-    b_dV = dV_to_E(np.array(b_dV))
-    b_dV_16 = dV_to_E(np.array(b_dV_16))
-    b_dV_84 = dV_to_E(np.array(b_dV_84))
+    b_dV_err = dV_err_to_T_err(np.array(b_dV), np.array(b_dV_err))
+    b_dV = dV_to_T(np.array(b_dV))
+    b_dV_16 = dV_to_T(np.array(b_dV_16))
+    b_dV_84 = dV_to_T(np.array(b_dV_84))
     
     # データc
-    c_dV_err = dV_err_to_E_err(np.array(c_dV), np.array(c_dV_err))
-    c_dV = dV_to_E(np.array(c_dV))
+    c_dV_err = dV_err_to_T_err(np.array(c_dV), np.array(c_dV_err))
+    c_dV = dV_to_T(np.array(c_dV))
     
     # MCMC用データ
     if len(emcee_dV_16) > 0:
-        emcee_dV_16 = dV_to_E(np.array(emcee_dV_16))
-        emcee_dV_84 = dV_to_E(np.array(emcee_dV_84))
+        emcee_dV_16 = dV_to_T(np.array(emcee_dV_16))
+        emcee_dV_84 = dV_to_T(np.array(emcee_dV_84))
     if len(mc_dV_16) > 0:
-        mc_dV_16 = dV_to_E(np.array(mc_dV_16))
-        mc_dV_84 = dV_to_E(np.array(mc_dV_84))
+        mc_dV_16 = dV_to_T(np.array(mc_dV_16))
+        mc_dV_84 = dV_to_T(np.array(mc_dV_84))
+        
+    # 未補正データ
+    if len(uncorr_R) > 0:
+        uncorr_dV_err = dV_err_to_T_err(np.array(uncorr_dV), np.array(uncorr_dV_err))
+        uncorr_dV = dV_to_T(np.array(uncorr_dV))
 
     # --- プロット ---
     plt.figure(figsize=(9, 6))
@@ -166,11 +191,16 @@ def plot_comparison():
     
     # 点の色は別々のままでプロット (エラーバー付き)
     plt.errorbar(a_R, a_dV, yerr=a_dV_err, fmt='o', color='orange', markersize=7, 
-                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data a (gyaku.py/gosa.py)', zorder=2)
+                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data a', zorder=2)
     plt.errorbar(b_R, b_dV, yerr=b_dV_err, fmt='^', color='green', markersize=7, 
-                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data b (Provided)', zorder=2)
+                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data b', zorder=2)
     plt.errorbar(c_R, c_dV, yerr=c_dV_err, fmt='s', color='blue', markersize=7, 
-                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data c (data_n.csv)', zorder=2)
+                 capsize=4, elinewidth=1.2, capthick=1.2, label='Data c', zorder=2)
+                 
+    # 未補正データプロット
+    if len(uncorr_R) > 0:
+        plt.errorbar(uncorr_R, uncorr_dV, yerr=uncorr_dV_err, fmt='D-', color='gray', markersize=6, 
+                     capsize=4, elinewidth=1.2, capthick=1.2, label='Uncorrected (Simple Fit)', zorder=1)
     
     # mcmc (a, b, c) の16%と84%を区別せずにつなげてプロット (塗りつぶし用)
     all_arrays_R = [emcee_R, b_R, mc_R]
@@ -198,15 +228,15 @@ def plot_comparison():
     
     # グラフの装飾
     plt.xlabel('Major Radius R (m)', fontsize=12)
-    plt.ylabel('Thermal Energy $E = 1/2 k_B T$ (J)', fontsize=12)
-    plt.title('Thermal Energy Profile Comparison with Errors (a, b, c)', fontsize=14)
+    plt.ylabel('Temperature $T = m dV^2 / (2 k_B)$ (K)', fontsize=12)
+    plt.title('Temperature Profile Comparison with Errors (a, b, c)', fontsize=14)
     plt.grid(True, linestyle=':', alpha=0.7)
     plt.legend(fontsize=11)
     
     # Y軸の最小値を0に設定
     plt.ylim(bottom=0)
     
-    # E(J)は非常に小さい値 (e.g. 1e-16) になるので、y軸のフォーマットを科学的記数法にする
+    # 温度が非常に大きくなる場合は科学的記数法を使う
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
     plt.tight_layout()
